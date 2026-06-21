@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Typeahead</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="page-wrapper">
+    <header>
+      <h1>&#128269; Search Typeahead</h1>
+      <p class="subtitle">Powered by FastAPI · PostgreSQL · Redis (Consistent Hashing)</p>
+    </header>
+
+    <main>
+      <!-- ── Search bar ───────────────────────────────────────────────── -->
+      <div class="search-container">
+        <div class="search-box-wrapper">
+          <input
+            type="text"
+            id="search-input"
+            class="search-input"
+            placeholder="Start typing to search…"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search"
+            aria-autocomplete="list"
+            aria-controls="suggestion-list"
+          />
+          <button id="search-btn" class="search-btn" aria-label="Search">Search</button>
+        </div>
+
+        <!-- Suggestion dropdown -->
+        <ul id="suggestion-list" class="suggestion-list" role="listbox" aria-label="Suggestions" hidden></ul>
+      </div>
+
+      <!-- Search result feedback -->
+      <div id="search-result" class="search-result" hidden></div>
+
+      <!-- Cache debug badge (shown after each suggest call) -->
+      <div id="cache-badge" class="cache-badge" hidden></div>
+
+      <!-- ── Trending searches ────────────────────────────────────────── -->
+      <section class="trending-section">
+        <h2>&#128293; Trending Searches</h2>
+        <div id="trending-list" class="trending-list">
+          <span class="loading">Loading…</span>
+        </div>
+        <button id="refresh-trending" class="refresh-btn">&#8635; Refresh</button>
+      </section>
+
+      <!-- ── Architecture callout ────────────────────────────────────── -->
+      <section class="info-section">
+        <h2>&#128736;&#65039; How It Works</h2>
+        <ul>
+          <li><strong>Consistent Hashing:</strong> Each prefix is hashed and routed to 1 of 3 Redis nodes using a virtual-node ring (150 vnodes / node).</li>
+          <li><strong>Write-Behind:</strong> Search submissions are buffered in memory and batch-upserted to PostgreSQL every 5 s (or every 500 events).</li>
+          <li><strong>Scoring:</strong> <code>score = frequency×1 + recency_score×50</code> where <code>recency_score</code> uses exponential decay: <code>R_new = R_old·e<sup>−λΔt</sup> + 1</code>.</li>
+          <li><strong>Debouncing:</strong> Frontend waits 300 ms after the last keystroke before calling <code>GET /suggest</code>.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <a href="/docs" target="_blank">API Docs (Swagger)</a> ·
+      <a href="/cache/node-health" target="_blank">Cache Node Health</a> ·
+      <a href="/search/buffer-stats" target="_blank">Buffer Stats</a>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
